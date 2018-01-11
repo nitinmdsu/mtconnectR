@@ -27,12 +27,12 @@ mtc_device = create_mtc_device_from_dmtcd(system.file(file_path_dmtcd,package = 
 ```
 
 ## Calculating feed rate from the position data
-This function calculates the feed rate based on the position data and returns 
-the timestamps and the corresponding feed rates 
+This function calculates the feed rate based on the position data and returns
+the timestamps and the corresponding feed rates
 
 ```{r}
 calc_feed = calculated_feed_from_position(mtc_device) %>%
-  mutate(value = replace(value, value < 0.1, 0)) %>% 
+  mutate(value = replace(value, value < 0.1, 0)) %>%
   clean_reduntant_rows()
 ```
 
@@ -52,7 +52,7 @@ names(pos_data_mtc) = extract_param_from_xpath(names(pos_data_mtc), show_warning
 
 ## Parse G Code
 This is the first step in simulating device data from G Code
-This function parses the file which has the G code and splits it into blocks of G code and gives contextual information to each block with the help of the inbuilt G code dictionary 
+This function parses the file which has the G code and splits it into blocks of G code and gives contextual information to each block with the help of the inbuilt G code dictionary
 
 ```{r}
 gcode_file_path = "extdata/raw_gcode.NC"
@@ -62,20 +62,20 @@ gcode_parsed = parse_gcode(system.file(gcode_file_path,package = "mtconnectR"))
 ## Simulate G Code data
 This function finds the simulated postion and velocity data from the parsed G code
 ```{r}
-simulated_gcode_data = simulate_data_from_gcode(gcode_parsed, start_time = 0, data_res = 0.1, data_type = "HH") %>%   na.omit()
+simulated_gcode_data = simulate_data_from_gcode(gcode_parsed, start_time = 0, data_res = 0.1, data_type = "HH") %>% na.omit()
 
 # Creating MTCDevice object from the simulated data
 mtc_device_sim = create_mtc_device_from_ts(simulated_gcode_data)
 pos_data_sim = merge(mtc_device_sim, "pos")
 
 # Plotting variation of Y position with time
-ggplot(pos_data_mtc) + geom_path(aes(x = timestamp, y = path_pos_y)) 
+ggplot(pos_data_mtc) + geom_path(aes(x = timestamp, y = path_pos_y))
 ```
 
 ## Subsetting data for the operation for which we want to compare the simulated and actual data
 ```{r}
-time_split_start = as.POSIXct("2016-03-22 12:45:00", tz = "UTC") 
-time_split_end = as.POSIXct("2016-03-22 13:00:00", tz = "UTC") 
+time_split_start = as.POSIXct("2016-03-22 12:45:00", tz = "UTC")
+time_split_end = as.POSIXct("2016-03-22 13:00:00", tz = "UTC")
 
 pos_data_mtc = pos_data_mtc %>% filter(timestamp > time_split_start & timestamp < time_split_end)
 ```
@@ -84,12 +84,17 @@ pos_data_mtc = pos_data_mtc %>% filter(timestamp > time_split_start & timestamp 
 ## A number of plots are made to compare the simulated and actual data
 ```{r}
 # Plotting Y position vs X position to get an idea of the part made
-ggplot(pos_data_mtc) + geom_path(aes(x = path_pos_x, y = path_pos_y)) 
+ggplot(pos_data_mtc) + geom_path(aes(x = path_pos_x, y = path_pos_y))
 
+```
+
+```{r}
 # Plotting simulated part as per proper scale
 ggplot(pos_data_sim) + geom_path(aes(x = x_pos, y = y_pos)) +
   coord_cartesian(xlim = c(-2.5, 6), ylim = c(-4, 1))
+```
 
+```{r}
 # Plotting actual part as per proper scale
 ggplot(pos_data_mtc) + geom_path(aes(x = path_pos_x, y = path_pos_y)) +
   coord_cartesian(xlim = c(-2.5, 6), ylim = c(-4, 1))
@@ -113,14 +118,10 @@ plot_twoway(mtc_sim_mapped_op, mtc_device_sim, mtc_device_op, 20, 100)
 
 ## Comparing feed parameters
 ```{r}
-# Comparing feed rate data Simulated vs actual 
+# Comparing feed rate data Simulated vs actual
 feed_compare_op = merge(mtc_sim_mapped_op, "pfr") %>% na.omit()
 names(feed_compare_op) = extract_param_from_xpath(names(feed_compare_op), show_warnings = F)
 
-ggplot(feed_compare_op, aes(x = timestamp)) +
-  geom_step(aes(y = pfr_calculated, colour = 'Calculated'), size = 1) +
-  geom_step(aes(y = pfr, colour = "Simulated"), size = 1) +
-  coord_cartesian(ylim = c(-3, 300))
 
 # Comparing feed ratio data Simulated vs actual
 pos_feed_ratio_compare_op = merge(mtc_sim_mapped_op, "pfr|_pos_") %>% na.omit()
